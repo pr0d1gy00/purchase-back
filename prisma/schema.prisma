@@ -1,80 +1,78 @@
 generator client {
   provider = "prisma-client"
-    output   = "../generated/prisma"
-
+  output   = "../generated/prisma"
 }
+
 datasource db {
   provider = "postgresql"
 }
 
-
 model User {
-  id                String         @id @default(uuid())
-  email             String         @unique
+  id                String          @id @default(uuid())
+  email             String          @unique
   name              String?
-  password          String         
-preferredCurrency String         @default("USD") // Ahora es un String
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  deletedAt         DateTime?      // Para sincronizar bajas de usuarios si aplica
+  password          String
+  preferredCurrency String          @default("USD") // Ahora es un String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime? // Para sincronizar bajas de usuarios si aplica
   purchases         Purchase[]
-  products          Product[]      
+  products          Product[]
   categories        Category[]
   stores            Store[]
   exchangeRates     ExchangeRate[]
-  purchaseGroups PurchaseGroup[]
-
+  purchaseGroups    PurchaseGroup[]
 }
 
 model Store {
   id        String     @id @default(uuid())
-  name      String     
-  location  String?    
+  name      String
+  location  String?
   userId    String?
   user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  deletedAt DateTime?  // Permite replicar si el usuario borró o editó un local offline
+  deletedAt DateTime? // Permite replicar si el usuario borró o editó un local offline
   purchases Purchase[]
 
-  @@unique([name, location]) 
+  @@unique([name, location])
 }
 
 model Product {
-  id           String         @id @default(uuid())
-  name         String         
-  brand        String?        
- categoryId   String         
-  category     Category       @relation(fields: [categoryId], references: [id])
-  metadata     Json?          // Tipo Json nativo indexable en PostgreSQL (JSONB)
-  barcode      String?        @unique
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  deletedAt    DateTime?      // Crucial: Si borras un producto offline, se marca aquí
-  items        PurchaseItem[]
+  id         String         @id @default(uuid())
+  name       String
+  brand      String?
+  categoryId String
+  category   Category       @relation(fields: [categoryId], references: [id])
+  metadata   Json? // Tipo Json nativo indexable en PostgreSQL (JSONB)
+  barcode    String?        @unique
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  deletedAt  DateTime? // Crucial: Si borras un producto offline, se marca aquí
+  items      PurchaseItem[]
 
   @@index([name])
   @@index([categoryId])
 }
 
 model Purchase {
-  id                 String         @id @default(uuid())
-  userId             String
-  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storeId            String
-  store              Store          @relation(fields: [storeId], references: [id])
-  purchaseDate       DateTime       @default(now()) 
-  appliedExchangeRate Decimal?       @db.Decimal(18, 4) 
-  exchangeRateSource  String?        // "BCV", "Paralelo", "Custom"
+  id                  String         @id @default(uuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId             String
+  store               Store          @relation(fields: [storeId], references: [id])
+  purchaseDate        DateTime       @default(now())
+  appliedExchangeRate Decimal?       @db.Decimal(18, 4)
+  exchangeRateSource  String? // "BCV", "Paralelo", "Custom"
   localCurrency       String?        @default("VES")
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  deletedAt          DateTime?      // Crucial: Si borras una factura offline
-  items              PurchaseItem[]
-purchaseGroupId String?
-purchaseGroup   PurchaseGroup? @relation(fields: [purchaseGroupId], references: [id])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime? // Crucial: Si borras una factura offline
+  items               PurchaseItem[]
+  purchaseGroupId     String?
+  purchaseGroup       PurchaseGroup? @relation(fields: [purchaseGroupId], references: [id])
 
   @@index([userId])
   @@index([storeId])
@@ -87,14 +85,14 @@ model PurchaseItem {
   purchase            Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   productId           String
   product             Product   @relation(fields: [productId], references: [id])
-  quantity            Decimal   @db.Decimal(10, 3) 
+  quantity            Decimal   @db.Decimal(10, 3)
   originalPrice       Decimal   @db.Decimal(18, 2)
   originalCurrency    String
-  appliedExchangeRate Decimal   @db.Decimal(18, 4) 
-  priceInUsd          Decimal   @db.Decimal(18, 4) 
+  appliedExchangeRate Decimal   @db.Decimal(18, 4)
+  priceInUsd          Decimal   @db.Decimal(18, 4)
   localCurrencyPrice  Decimal   @db.Decimal(18, 2) // Reemplaza a priceInVes
-  localCurrency       String    @default("VES")    // Guardamos qué moneda se usó
-  exchangeRateSource  String?   // El fotograma: "BCV", "Paralelo", "Custom"
+  localCurrency       String    @default("VES") // Guardamos qué moneda se usó
+  exchangeRateSource  String? // El fotograma: "BCV", "Paralelo", "Custom"
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime? // Control individual por artículo si se remueve del carrito de una compra vieja
@@ -104,42 +102,43 @@ model PurchaseItem {
 }
 
 model Category {
-  id        String     @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   metadata  Json?
-  userId    String?    // Si es null, es categoría global de Admin
-  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  userId    String? // Si es null, es categoría global de Admin
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
   products  Product[]
 
   @@unique([name, userId])
 }
 
-model PurchaseGroup{
-  id                 String    @id @default(uuid())
+model PurchaseGroup {
+  id        String     @id @default(uuid())
   purchases Purchase[]
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?  
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
 }
 
 model ExchangeRate {
   id             String   @id @default(uuid())
   baseCurrency   String   @default("USD")
-  targetCurrency String   // Ej: "VES", "COP", "ARS"
+  targetCurrency String // Ej: "VES", "COP", "ARS"
   rate           Decimal  @db.Decimal(18, 4)
-  source         String   // Ej: "BCV", "Paralelo", "Binance"
+  source         String // Ej: "BCV", "Paralelo", "Binance"
   date           DateTime @default(now())
 
-  userId         String?
-  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  deletedAt      DateTime?
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   @@index([targetCurrency, source, date])
 }
